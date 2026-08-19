@@ -247,6 +247,7 @@
 <script>
   // 👇 استبدل هذا باسم مستخدم صفحتك على فيسبوك (الموجود في رابط الصفحة)
   const PAGE_USERNAME = "dr.mennai39";
+  const SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbz89SEt-xkPYqyZbQ1iq7USMODxCYuKCjubEJoUSqUzqMRoJy0TOu9sjngUcaYretrSoA/exec";
 
   const form = document.getElementById('growthForm');
 
@@ -289,6 +290,14 @@
 
     const encoded = encodeURIComponent(message);
     const messengerUrl = `https://m.me/${PAGE_USERNAME}?text=${encoded}`;
+
+    // أرسل نسخة إلى جدول Google Sheets (في الخلفية، بدون انتظار الرد)
+    fetch(SHEET_ENDPOINT, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ fname, lname, age, height, gender, phone })
+    }).catch(function(err){ console.error('تعذر حفظ البيانات في الجدول:', err); });
 
     window.open(messengerUrl, '_blank');
   });
