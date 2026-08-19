@@ -110,6 +110,14 @@
     grid-template-columns:1fr 1fr;
     gap:12px;
   }
+  .dob-row{
+    display:grid;
+    grid-template-columns:1fr 1.3fr 1fr;
+    gap:8px;
+  }
+  .dob-row select{
+    cursor:pointer;
+  }
   .genders{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -204,17 +212,20 @@
         <div class="error">الرجاء إدخال اللقب</div>
       </div>
 
-      <div class="row2">
-        <div class="field" id="field-birthdate">
-          <label for="birthdate">تاريخ الميلاد</label>
-          <input type="date" id="birthdate" required>
-          <div class="error">أدخل تاريخ ميلاد صحيح</div>
+      <div class="field" id="field-birthdate">
+        <label>تاريخ الميلاد</label>
+        <div class="dob-row">
+          <select id="dob-day" required></select>
+          <select id="dob-month" required></select>
+          <select id="dob-year" required></select>
         </div>
-        <div class="field" id="field-height">
-          <label for="height">الطول (سم)</label>
-          <input type="number" id="height" placeholder="مثال: 65" min="20" max="150" step="0.1" required>
-          <div class="error">أدخل طولًا صحيحًا</div>
-        </div>
+        <div class="error">اختر تاريخ ميلاد صحيح</div>
+      </div>
+
+      <div class="field" id="field-height">
+        <label for="height">الطول (سم)</label>
+        <input type="number" id="height" placeholder="مثال: 65" min="20" max="150" step="0.1" required>
+        <div class="error">أدخل طولًا صحيحًا</div>
       </div>
 
       <div class="field" id="field-gender">
@@ -247,16 +258,58 @@
 <script>
   // 👇 استبدل هذا باسم مستخدم صفحتك على فيسبوك (الموجود في رابط الصفحة)
   const PAGE_USERNAME = "dr.mennai39";
-  const SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbz8H_Kp1t5FsNlXf1ymGKtbQ_jq-iIt_Mcx9Y4J8f2ROXyPsO13EnuXefVauSyMePhbdw/exec";
+   const SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbz8H_Kp1t5FsNlXf1ymGKtbQ_jq-iIt_Mcx9Y4J8f2ROXyPsO13EnuXefVauSyMePhbdw/exec";
 
   const form = document.getElementById('growthForm');
 
-  function calcAgeText(birthDateStr){
-    const birth = new Date(birthDateStr);
+  const MONTHS_AR = ['جانفي','فيفري','مارس','أفريل','ماي','جوان','جويلية','أوت','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const daySelect = document.getElementById('dob-day');
+  const monthSelect = document.getElementById('dob-month');
+  const yearSelect = document.getElementById('dob-year');
+
+  function fillSelect(select, items, placeholder){
+    const ph = document.createElement('option');
+    ph.value = '';
+    ph.textContent = placeholder;
+    ph.disabled = true;
+    ph.selected = true;
+    select.appendChild(ph);
+    items.forEach(function(item){
+      const opt = document.createElement('option');
+      opt.value = item.value;
+      opt.textContent = item.label;
+      select.appendChild(opt);
+    });
+  }
+
+  const days = [];
+  for(let d=1; d<=31; d++) days.push({value:d, label:d});
+  fillSelect(daySelect, days, 'اليوم');
+
+  const months = MONTHS_AR.map(function(name, i){ return {value:i+1, label:name}; });
+  fillSelect(monthSelect, months, 'الشهر');
+
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for(let y=currentYear; y>=currentYear-15; y--) years.push({value:y, label:y});
+  fillSelect(yearSelect, years, 'السنة');
+
+  function getBirthDate(){
+    const d = Number(daySelect.value);
+    const m = Number(monthSelect.value);
+    const y = Number(yearSelect.value);
+    if(!d || !m || !y) return null;
+    const date = new Date(y, m-1, d);
+    // تأكد أن اليوم صالح فعليًا لهذا الشهر (مثلاً لا يوجد 31 فيفري)
+    if(date.getMonth() !== m-1) return null;
+    return date;
+  }
+
+  function calcAgeText(birthDate){
     const today = new Date();
-    let years = today.getFullYear() - birth.getFullYear();
-    let months = today.getMonth() - birth.getMonth();
-    if(today.getDate() < birth.getDate()) months--;
+    let years = today.getFullYear() - birthDate.getFullYear();
+    let months = today.getMonth() - birthDate.getMonth();
+    if(today.getDate() < birthDate.getDate()) months--;
     if(months < 0){ years--; months += 12; }
     if(years < 0) return null;
 
@@ -269,11 +322,10 @@
     return 'أقل من شهر';
   }
 
-  function formatDateArabic(birthDateStr){
-    const d = new Date(birthDateStr);
-    const dd = String(d.getDate()).padStart(2,'0');
-    const mm = String(d.getMonth()+1).padStart(2,'0');
-    const yyyy = d.getFullYear();
+  function formatDateArabic(birthDate){
+    const dd = String(birthDate.getDate()).padStart(2,'0');
+    const mm = String(birthDate.getMonth()+1).padStart(2,'0');
+    const yyyy = birthDate.getFullYear();
     return `${dd}/${mm}/${yyyy}`;
   }
 
@@ -282,7 +334,7 @@
 
     const fname = document.getElementById('fname').value.trim();
     const lname = document.getElementById('lname').value.trim();
-    const birthdate = document.getElementById('birthdate').value;
+    const birthDate = getBirthDate();
     const height = document.getElementById('height').value.trim();
     const genderInput = document.querySelector('input[name="gender"]:checked');
     const phone = document.getElementById('phone').value.trim();
@@ -296,7 +348,7 @@
 
     setInvalid('field-fname', !fname);
     setInvalid('field-lname', !lname);
-    setInvalid('field-birthdate', !birthdate || new Date(birthdate) > new Date());
+    setInvalid('field-birthdate', !birthDate || birthDate > new Date());
     setInvalid('field-height', !height || Number(height) <= 0);
     setInvalid('field-gender', !genderInput);
     setInvalid('field-phone', !phone || phone.length < 8);
@@ -304,8 +356,8 @@
     if(!valid) return;
 
     const gender = genderInput.value;
-    const ageText = calcAgeText(birthdate);
-    const birthdateFormatted = formatDateArabic(birthdate);
+    const ageText = calcAgeText(birthDate);
+    const birthdateFormatted = formatDateArabic(birthDate);
 
     const message =
 `مرحبًا، أرغب في التحقق من نمو طفلي:
