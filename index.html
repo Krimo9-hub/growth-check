@@ -368,8 +368,8 @@
             if (months < 0) { years--; months += 12; }
             if (years < 0) return null;
 
-            const yearPart = years === 1 ? 'سنة' : years === 2 ? 'سنتان' : years > 0 ? years + ' سنوات' : '';
-            const monthPart = months === 1 ? 'شهر' : months === 2 ? 'شهران' : months > 0 ? months + ' أشهر' : '';
+            const yearPart = years > 0 ? years + ' سنة' : '';
+            const monthPart = months > 0 ? months + ' شهر' : '';
 
             if (years > 0 && months > 0) return `${yearPart} و${monthPart}`;
             if (years > 0) return yearPart;
